@@ -7,7 +7,7 @@ import traceback
 from flask import send_from_directory, Flask, current_app
 
 
-class CalenderOrganiser():
+class CalendarOrganiser():
     def __init__(self):
         self.scriptDir = os.path.dirname(os.path.abspath(__file__))
         if not os.path.isdir(self.scriptDir+'/events/'):
@@ -118,51 +118,58 @@ class CalenderOrganiser():
         if not week == {}:
             weeks.append(week)
         return weeks
+        
+    
+    def eventLinks(self):
+        global mainLink
+        html = ""
+        for i in self.events():
+            html += "<a href="+mainLink+"/calendar-organiser/event/"+i+">"+i+"</a><br><br>"
+        return html
 
 
 
 mainLink = 'http://junm.pythonanywhere.com'
 pydir = "/home/JunM/mysite"
-#app = Flask(__name__, static_url_path = pydir+'/static')
+maincss = open(pydir+'/main.css', 'r').read()
+template = open(pydir+'/template.html', 'r').read()
 
 
-defCSS = open(pydir+"/default.css").read()
+@route('/calendar-organiser/main.css')
+def calOrgCSS():
+    
+    return open(pydir+'/main.css', 'r').read()
 
-print(defCSS)
 
-
-@route('/calender-organiser')
+@route('/calendar-organiser')
 def calOrg():
     global mainLink
-    html = "<html><head><title>Jun's calender organiser</title></head><body>"
-    html += "<h1>Events</h1>"
+    
+    form = '<br><form action="/calendar-organiser/addEvent" method = "post">'
 
-    c = CalenderOrganiser()
-    for i in c.events():
-        html += "<a href="+mainLink+"/calender-organiser/event/"+i+">"+i+"</a><br>"
+    form += '<label for="eventName">New event (cannot contain special characters except dashes): </label><br>'
+    form += '<input type="text" id="eventName" name="eventName" value="" required><br>'
 
-    html += '<br><form action="/calender-organiser/addEvent" method = "post">'
+    form += '<label for="startDate">Start date (YYYY-MM-DD): </label><br>'
+    form += '<input type="text" id="startDate" name="startDate" value="" required><br>'
 
-    html += '<label for="eventName">New event (cannot contain special characters except dashes): </label><br>'
-    html += '<input type="text" id="eventName" name="eventName" value="" required><br>'
+    form += '<label for="endDate">End date (YYYY-MM-DD): </label><br>'
+    form += '<input type="text" id="endDate" name="endDate" value="" required><br>'
 
-    html += '<label for="startDate">Start date (YYYY-MM-DD): </label><br>'
-    html += '<input type="text" id="startDate" name="startDate" value="" required><br>'
+    form += '<input type="submit" value="Submit"></form>'
 
-    html += '<label for="endDate">End date (YYYY-MM-DD): </label><br>'
-    html += '<input type="text" id="endDate" name="endDate" value="" required><br>'
 
-    html += '<input type="submit" value="Submit"></form>'
-
-    html += "</body></html>"
+    c = CalendarOrganiser()
+    html = template.format(title = "Calendar Organiser", head = "", events = c.eventLinks(), main = form, body = "")
+    
     return html
 
 
-@post('/calender-organiser/addEvent', method = "post")
+@post('/calendar-organiser/addEvent', method = "post")
 def calOrgAddEvent():
     with open("error.txt", "w") as log:
         try:
-            c = CalenderOrganiser()
+            c = CalendarOrganiser()
             formData = request.forms
 
             eventName = str(formData["eventName"])
@@ -178,7 +185,7 @@ def calOrgAddEvent():
             traceback.print_exc(file=log)
 
 
-@route('/calender-organiser/event/<eventName>')
+@route('/calendar-organiser/event/<eventName>')
 def calOrgViewEvent(eventName = ''):
     return calOrgEvent(str(eventName))
 
@@ -187,12 +194,10 @@ def calOrgEvent(eventName):
     with open("error.txt", "w") as log:
         try:
             global mainLink
-            html = '<html><head><link rel="stylesheet", href="default.css"><title>'+eventName+'</title></head><body>'
-            html += "<a href="+mainLink+"/calender-organiser>Homepage</a><br>"
-            html += "<h1>"+eventName+"</h1>"
-            c = CalenderOrganiser()
+            html = "<h1>"+eventName+"</h1>"
+            c = CalendarOrganiser()
             event = c.event(eventName)
-            html += '<form action="/calender-organiser/event/'+eventName+'/addAvail" method = "post">'
+            html += '<form action="/calendar-organiser/event/'+eventName+'/addAvail" method = "post">'
             isMobile = False
             if isMobile:
                 for i in range(len(event["DaysList"])):
@@ -270,18 +275,17 @@ def calOrgEvent(eventName):
             html += '<input type="text" id="unm" name="unm" value="" required><br>'
 
             html += '<input type="submit" value="Submit"></form>'
-            html += "</body></html>"
-            return html
+            return template.format(title = eventName, head = "", events = c.eventLinks(), main = html, body = "")
         except Exception:
             traceback.print_exc(file=log)
 
 
-@post('/calender-organiser/event/<eventName>/addAvail', method = "post")
+@post('/calendar-organiser/event/<eventName>/addAvail', method = "post")
 def calOrgAddAvail(eventName = ''):
     with open("error.txt", "w") as log:
         try:
             formData = request.forms
-            c = CalenderOrganiser()
+            c = CalendarOrganiser()
             unm = formData['unm']
             if not c.userNameAllowed(unm):
                 html = '<html><head><title>User name invalid, must not contain special characters</title></head><body><h1>User name invalid, must not contain special characters</h1></body></html>'
