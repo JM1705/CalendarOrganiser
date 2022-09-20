@@ -1,0 +1,37 @@
+body {
+  font-family: 'arial';
+  margin: 0px;
+  text-overflow: wrap;
+}
+.topbar {
+  text-align: center;
+  padding: 10px;
+  background-color: rgb(22, 23, 36);
+  color: white;
+  font-size: 30px;
+}
+.title {
+  margin: 0px;
+}
+.sidebar {
+  vertical-align: top;
+  width: 250px;
+  display: inline-block;
+  color: white;
+  background-color: rgb(44, 48, 74);
+  padding: 30px;
+  margin: auto;
+  height: 100vh;
+}
+.main {
+  width: calc(100vw - 500px);
+  display: inline-block;
+  padding: 30px;
+  margin: auto;
+}
+a {
+  color: white;
+}
+a:hover {
+  color: yellow;
+}
