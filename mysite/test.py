@@ -85,23 +85,15 @@ class CalendarOrganiser():
                 existingEvents.append(i.split(".")[0])
 
         # name of event
-        allowedLetters = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM-1234567890"
+        allowedLetters = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM-1234567890 ()<>*&^$#@![]{}:;'?,"
         nameAllowed = True
         for i in eventName:
             if i not in allowedLetters:
                 nameAllowed = False
         if eventName in existingEvents:
             nameAllowed = False
-
-        return nameAllowed
-
-
-    def userNameAllowed(self, userName):
-        allowedLetters = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM 1234567890"
-        nameAllowed = True
-        for i in userName:
-            if i not in allowedLetters:
-                nameAllowed = False
+        if len(eventName)>100:
+            nameAllowed = False
 
         return nameAllowed
 
@@ -118,13 +110,15 @@ class CalendarOrganiser():
         if not week == {}:
             weeks.append(week)
         return weeks
-        
-    
+
+
     def eventLinks(self):
         global mainLink
         html = ""
         for i in self.events():
-            html += "<a href="+mainLink+"/calendar-organiser/event/"+i+">"+i+"</a><br><br>"
+            print(i)
+            html += '<a href="'+mainLink+'/calendar-organiser/event/'+i+'">'+i+'</a><br><br>'
+        print(html)
         return html
 
 
@@ -137,17 +131,17 @@ template = open(pydir+'/template.html', 'r').read()
 
 @route('/calendar-organiser/main.css')
 def calOrgCSS():
-    
+
     return open(pydir+'/main.css', 'r').read()
 
 
 @route('/calendar-organiser')
 def calOrg():
     global mainLink
-    
+
     form = '<br><form action="/calendar-organiser/addEvent" method = "post">'
 
-    form += '<label for="eventName">New event (cannot contain special characters except dashes): </label><br>'
+    form += '<label for="eventName">New event (cannot contain some special characters, must be shorter than 100 letters): </label><br>'
     form += '<input type="text" id="eventName" name="eventName" value="" required><br>'
 
     form += '<label for="startDate">Start date (YYYY-MM-DD): </label><br>'
@@ -161,28 +155,24 @@ def calOrg():
 
     c = CalendarOrganiser()
     html = template.format(title = "Calendar Organiser", head = "", events = c.eventLinks(), main = form, body = "")
-    
+
     return html
 
 
 @post('/calendar-organiser/addEvent', method = "post")
 def calOrgAddEvent():
-    with open("error.txt", "w") as log:
-        try:
-            c = CalendarOrganiser()
-            formData = request.forms
+    c = CalendarOrganiser()
+    formData = request.forms
 
-            eventName = str(formData["eventName"])
-            startDate = str(formData["startDate"])
-            endDate = str(formData["endDate"])
-            if not c.eventNameAllowed(eventName):
-                html = '<html><head><title>Event name invalid</title></head><body><h1>Event name invalid</h1></body></html>'
-                return html
-            else:
-                c.newEvent(eventName, startDate, endDate)
-                return calOrgEvent(eventName)
-        except Exception:
-            traceback.print_exc(file=log)
+    eventName = str(formData["eventName"])
+    startDate = str(formData["startDate"])
+    endDate = str(formData["endDate"])
+    if not c.eventNameAllowed(eventName):
+        html = '<html><head><title>Event name invalid</title></head><body><h1>Event name invalid</h1></body></html>'
+        return html
+    else:
+        c.newEvent(eventName, startDate, endDate)
+        return calOrgEvent(eventName)
 
 
 @route('/calendar-organiser/event/<eventName>')
@@ -191,114 +181,81 @@ def calOrgViewEvent(eventName = ''):
 
 
 def calOrgEvent(eventName):
-    with open("error.txt", "w") as log:
-        try:
-            global mainLink
-            html = "<h1>"+eventName+"</h1>"
-            c = CalendarOrganiser()
-            event = c.event(eventName)
-            html += '<form action="/calendar-organiser/event/'+eventName+'/addAvail" method = "post">'
-            isMobile = False
-            if isMobile:
-                for i in range(len(event["DaysList"])):
-                    tempList = event["DaysList"][i]
-                    html += "<br>"
-                    html += "<h2>"+tempList[0]+"-"+tempList[1]+"-"+tempList[2]+"</h2>"
+    global mainLink
+    html = "<h1>"+eventName+"</h1>"
+    c = CalendarOrganiser()
+    event = c.event(eventName)
+    html += '<form action="/calendar-organiser/event/'+eventName+'/addAvail" method = "post">'
+    weeks = c.splitDaysToWeeks(event["DaysList"])
+    with open("weeks.txt", "w") as f:
+        f.write(str(weeks))
+    html += '<table style="border-spacing: 10px 0;">'
 
-                    html += '<div style="line-height: 0.3;">'
-                    availForm = ['Unavailable', 'Maybe unavailable', 'Available']
-                    availCol = ['red', 'blue', 'green']
-                    for j in event["Availability"]:
-                        availInt = event["Availability"][j][i]
-                        avail = availForm[availInt]
-                        html += '<p style="color:'+availCol[availInt]+'">'+j+': '+avail+'</p>'
-                    html += "</div><br><div>"
+    html += '<tr>'
+    weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    for j in range(7):
+            html += '<td><p class=weekdayName>'+weekdayNames[j]+'</p></td>'
+    html += '</tr>'
 
-                    for j in range(3):
-                        inputId = str(i)+'-'+str(j)
-                        html += '<input type="radio" id="'+inputId+'" name="'+str(i)+'" value="'+str(j)+'" required>'
-                        html += '<label for="'+inputId+'">'+availForm[j]+'</label><br>'
-                    html += "</div>"
+    for i in weeks:
+        html += '<tr>'
+        for j in range(7):
+            if str(j) in i:
+                html += '<td>'
+
+                html += "<br>"
+
+                # bad date to list converter
+                day = []
+                for k in i[str(j)].strftime("%Y-%m-%d").split("-"):
+                    day.append(k)
+
+                html += "<h2>"+day[0]+"-"+day[1]+"-"+day[2]+"</h2>"
+
+                dayIndex = event["DaysList"].index(day)
+
+                html += '<div style="line-height: 0.3;">'
+                availForm = ['Unavailable', 'Unknown', 'Available', 'Not Preferable', 'Partial']
+                availCol = ['una', 'unk', 'ava', 'nop', 'par']
+                for k in event["Availability"]:
+                    availInt = event["Availability"][k][dayIndex]
+                    avail = availForm[availInt]
+                    html += '<p class='+availCol[availInt]+'>'+k+': '+avail+'</p>'
+                html += "</div><br><div>"
+
+                for k in range(len(availForm)):
+                    inputId = str(dayIndex)+'-'+str(k)
+                    html += '<input type="radio" id="'+inputId+'" name="'+str(dayIndex)+'" value="'+str(k)+'" required>'
+                    html += '<label for="'+inputId+'">'+availForm[k]+'</label><br>'
+                html += "</div>"
+
+                html += '</td>'
             else:
-                weeks = c.splitDaysToWeeks(event["DaysList"])
-                with open("weeks.txt", "w") as f:
-                    f.write(str(weeks))
-                html += '<table style="border-spacing: 10px 0;">'
-                for i in weeks:
-                    html += '<tr>'
-                    for j in range(7):
-                        if str(j) in i:
-                            html += '<td>'
+                html += '<td>'
+                html += '</td>'
+        html += '</tr>'
+    html += '</table>'
 
-                            html += "<br>"
+    html += "<br>"
 
-                            # stupid date to list converter
-                            day = []
-                            for k in i[str(j)].strftime("%Y-%m-%d").split("-"):
-                                day.append(k)
+    html += '<label for="unm">Name: (No special characters)</label><br>'
+    html += '<input type="text" id="unm" name="unm" value="" required><br>'
 
-                            html += "<h2>"+day[0]+"-"+day[1]+"-"+day[2]+"</h2>"
-
-                            dayIndex = event["DaysList"].index(day)
-
-                            html += '<div style="line-height: 0.3;">'
-                            availForm = ['Unavailable', 'Perchance', 'Available']
-                            availCol = ['red', 'blue', 'green']
-                            for k in event["Availability"]:
-                                availInt = event["Availability"][k][dayIndex]
-                                avail = availForm[availInt]
-                                html += '<p style="color:'+availCol[availInt]+'">'+k+': '+avail+'</p>'
-                            html += "</div><br><div>"
-
-                            for k in range(3):
-                                inputId = str(dayIndex)+'-'+str(k)
-                                #availList = list(event["Availability"])
-                                #availInt = event["Availability"][availList[k]][dayIndex]
-                                #if k == availInt:
-                                #    html += '<input type="radio" id="'+inputId+'" name="'+str(dayIndex)+'" value="'+str(k)+'" required checked = "checked">'
-                                #else:
-                                #    html += '<input type="radio" id="'+inputId+'" name="'+str(dayIndex)+'" value="'+str(k)+'" required>'
-                                html += '<input type="radio" id="'+inputId+'" name="'+str(dayIndex)+'" value="'+str(k)+'" required>'
-                                html += '<label for="'+inputId+'">'+availForm[k]+'</label><br>'
-                            html += "</div>"
-
-                            html += '</td>'
-                        else:
-                            html += '<td>'
-                            html += '</td>'
-                    html += '</tr>'
-                html += '</table>'
-
-            html += "<br>"
-
-            html += '<label for="unm">Name: (No special characters)</label><br>'
-            html += '<input type="text" id="unm" name="unm" value="" required><br>'
-
-            html += '<input type="submit" value="Submit"></form>'
-            return template.format(title = eventName, head = "", events = c.eventLinks(), main = html, body = "")
-        except Exception:
-            traceback.print_exc(file=log)
+    html += '<input type="submit" value="Submit"></form>'
+    return template.format(title = eventName, head = "", events = c.eventLinks(), main = html, body = "")
 
 
 @post('/calendar-organiser/event/<eventName>/addAvail', method = "post")
 def calOrgAddAvail(eventName = ''):
-    with open("error.txt", "w") as log:
-        try:
-            formData = request.forms
-            c = CalendarOrganiser()
-            unm = formData['unm']
-            if not c.userNameAllowed(unm):
-                html = '<html><head><title>User name invalid, must not contain special characters</title></head><body><h1>User name invalid, must not contain special characters</h1></body></html>'
-                return html
-            else:
-                formData.pop('unm')
-                userAvail = []
-                for i in formData:
-                    userAvail.append(int(formData[i]))
-                c.newAvailability(eventName, unm, userAvail)
-                return calOrgEvent(eventName)
-        except Exception:
-            traceback.print_exc(file=log)
+    formData = request.forms
+    c = CalendarOrganiser()
+    unm = formData['unm']
+    formData.pop('unm')
+    userAvail = []
+    for i in formData:
+        userAvail.append(int(formData[i]))
+    c.newAvailability(eventName, unm, userAvail)
+    return calOrgEvent(eventName)
 
 
 #@route('/favicon.ico')

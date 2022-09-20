@@ -1,14 +1,10 @@
+@import url('https://rsms.me/inter/inter.css');
+html { font-family: 'Inter', sans-serif; }
 body {
-  font-family: 'arial';
   margin: 0px;
   text-overflow: wrap;
-}
-.topbar {
-  text-align: center;
-  padding: 10px;
-  background-color: rgb(22, 23, 36);
-  color: white;
-  font-size: 30px;
+  background-color: rgb(255, 255, 255);
+  color: black;
 }
 .title {
   margin: 0px;
@@ -17,8 +13,7 @@ body {
   vertical-align: top;
   width: 250px;
   display: inline-block;
-  color: white;
-  background-color: rgb(44, 48, 74);
+  background-color: rgb(220, 220, 220);
   padding: 30px;
   margin: auto;
   height: 100vh;
@@ -29,9 +24,31 @@ body {
   padding: 30px;
   margin: auto;
 }
+.weekdayName{
+  text-align: center;
+  font-size: 20px;
+}
+.una{
+  color: rgb(200, 0, 0);
+}
+.unk{
+  color: rgb(200, 163, 0);
+}
+.nop{
+  color: rgb(117, 0, 200);
+}
+.ava{
+  color: rgb(0, 200, 0);
+}
+.par{
+  color: rgb(0, 0, 200);
+}
 a {
-  color: white;
+  color: black;
 }
 a:hover {
   color: yellow;
+}
+label {
+  color: rgb(0, 0, 0);
 }
